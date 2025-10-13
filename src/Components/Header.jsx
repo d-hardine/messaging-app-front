@@ -4,7 +4,7 @@ export default function Header() {
     return (
         <header>
             <div className="header-left-container">
-                asdaldkjasd
+                Hardine Chat
             </div>
             <div className="header-right-container">
                 askdhjaskdhl

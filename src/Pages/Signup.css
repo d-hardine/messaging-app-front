@@ -1,0 +1,11 @@
+.signup-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 400px;
+    margin: auto;
+}
+.signup-password-info {
+    font-size: 12px;
+    color: grey;
+}

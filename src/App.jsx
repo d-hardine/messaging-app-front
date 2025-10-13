@@ -1,4 +1,4 @@
-import './App.css'
+import { Outlet } from 'react-router'
 import Footer from './Components/Footer'
 import Header from './Components/Header'
 
@@ -6,9 +6,7 @@ function App() {
   return (
     <>
       <Header />
-      <main>
-        <div>Hello World</div>
-      </main>
+      <Outlet />
       <Footer />
     </>
   )
