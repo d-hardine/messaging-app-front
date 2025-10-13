@@ -5,3 +5,7 @@
     width: 400px;
     margin: auto;
 }
+
+.login-error-message {
+    color: red;
+}

@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import Login from './Pages/Login.jsx'
 import Signup from './Pages/Signup.jsx'
+import Chat from './Pages/Chat.jsx'
 
 const router = createBrowserRouter([
   {
@@ -12,7 +13,8 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       {index: true, element: <Login />},
-      {path: 'signup', element: <Signup/>},
+      {path: 'signup', element: <Signup />},
+      {path: 'chat', element: <Chat />}
     ]
   }
 ])

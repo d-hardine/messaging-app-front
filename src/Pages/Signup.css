@@ -8,4 +8,9 @@
 .signup-password-info {
     font-size: 12px;
     color: grey;
+    line-height: 0.2;
+}
+
+.signup-mismatch-password {
+    color: red;
 }
