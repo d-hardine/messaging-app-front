@@ -26,7 +26,7 @@ export default function Login() {
             }).then(response => {
                 navigate('/chat')
             }).catch(err => {
-                console.error(err.message)
+                console.error('error occured', err.message)
                 navigate('/')
             })
         } else {
@@ -50,6 +50,7 @@ export default function Login() {
                 setHeaderUsername(response.data.username)
                 setIncorrectUserPass(false)
                 navigate('/chat')
+                window.location.reload() //THIS SHIT IS WORKAROUND, PLEASE FIND A FIX
             })
             .catch(err => {
                 console.error(err.message)

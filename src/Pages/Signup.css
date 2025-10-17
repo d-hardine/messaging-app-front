@@ -11,6 +11,10 @@
     line-height: 0.2;
 }
 
-.signup-mismatch-password {
+.signup-error-info {
     color: red;
+}
+
+.signup-input-error {
+    border-color: red;
 }
