@@ -4,6 +4,7 @@ import { useNavigate, useOutletContext } from "react-router";
 import { io } from "socket.io-client";
 import axios from "axios";
 import './Chat.css';
+import FindFriend from "../Components/FindFriend";
 
 //connect the socket.io to the backend
 const socket = io('http://localhost:3000/', {
@@ -19,17 +20,18 @@ export default function Chat() {
     const [chat, setChat] = useState('')
     const [chatLog, setChatLog] = useState('')
     const [searchNewFriendTerm, setSearchNewFriendTerm] = useState('')
+    const [friends, setFriends] = useState([])
     const [newFriendList, setNewFriendList] = useState()
-    const [isOpen, setIsOpen] = useState(false)
+    const [isFindFriendMode, setIsFindFriendMode] = useState(false)
 
     const navigate = useNavigate()
 
-    const dialogRef = useRef(null)
+    const friendRequestSentDialogRef = useRef(null)
 
     const [headerUsername, setHeaderUsername] = useOutletContext()
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
-    async function fetchAuthAndNewFriendList() {
+    async function fetchAuthAndFriends() {
         const token = localStorage.getItem('jwtToken')
         if(token) {
             await axios.get(`${API_BASE_URL}/api/auth`, { //fetch auth
@@ -40,11 +42,17 @@ export default function Chat() {
                 setUser(response.data)
                 userRef.current = response.data
                 setHeaderUsername(response.data.username)
-                await axios.post(`${API_BASE_URL}/api/new-friend-list`, {userId: response.data.id}) //fetch new friend list
-                    .then(response => {
-                        setNewFriendList(response.data)
+                await axios.post(`${API_BASE_URL}/api/fetch-friends`, {userId: response.data.id}) //fetch friends
+                    .then(fetchFriendsResponse => {
+                        setFriends(fetchFriendsResponse.data)
                     }).catch(err => {
-                        console.error(err.message)
+                        console.error("Friends Error: " + err.message)
+                    })
+                await axios.post(`${API_BASE_URL}/api/new-friend-list`, {userId: response.data.id}) //fetch new friend list
+                    .then(newFriendsResponse => {
+                        setNewFriendList(newFriendsResponse.data)
+                    }).catch(err => {
+                        console.error("New Friends Error: " + err.message)
                     })
             }).catch(err => {
                 console.error(err.message)
@@ -57,11 +65,20 @@ export default function Chat() {
 
     useEffect(() => {
         socket.connect() //it wont connect with jwt authentication, why???
-        fetchAuthAndNewFriendList()
+        fetchAuthAndFriends()
         return () => {
             socket.disconnect()
         }
     }, [])
+
+    const toggleFriendRequestSentDialog = () => {
+        if(!friendRequestSentDialogRef.current) //check if the dialog tag has ref
+            return
+        if(friendRequestSentDialogRef.current.hasAttribute('open')) //check if the dialog tag is opened
+            friendRequestSentDialogRef.current.close()
+        else
+            friendRequestSentDialogRef.current.showModal()
+    }
 
     const sendMessage = (e) => {
         e.preventDefault()
@@ -76,15 +93,7 @@ export default function Chat() {
 
     const handleFriendRequest = (newFriendId) => {
         socket.emit('send friend request', {friendRequestId: newFriendId})
-    }
-
-    const toggleDialog = () => {
-        if(!dialogRef.current) //check if the dialog tag has ref
-            return
-        if(dialogRef.current.hasAttribute('open')) //check if the dialog tag is opened
-            dialogRef.current.close()
-        else
-            dialogRef.current.showModal()
+        toggleFriendRequestSentDialog()
     }
 
     useEffect(() => {
@@ -108,39 +117,41 @@ export default function Chat() {
         {user && (
             <main className="main-chat">
                 <div className="left-ui-container">
-                    <div className="notification-container">
-                        <input type="text" value={searchNewFriendTerm} placeholder="Search new friend here..." onChange={(e) => setSearchNewFriendTerm(e.target.value)}/>
-                    </div>
-                    {searchNewFriendTerm ? (
-                        <ul className="new-friend-list-container">
-                            {newFriendList.filter(list => list.username.includes(searchNewFriendTerm.toLowerCase())).map((list, i) => (
-                                <li key={list.id} className="new-friend-list-card">
-                                    <div>{list.firstName} {list.lastName}</div>
-                                    <div>@{list.username}</div>
-                                    <button onClick={() => handleFriendRequest(list.id)}>Send Friend Request</button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : 
                     <div className="friend-list-container">
-                        <div className="friend-card">Bruce Wayne</div>
-                        <div className="friend-card">Clark Kent</div>
-                        <div className="friend-card">Harry Potter</div>
-                        <div className="friend-card">John Cena</div>
-                        <div className="friend-card">Peter Parker</div>
-                        <button onClick={toggleDialog}>open modal</button>
-                        <dialog ref={dialogRef} onClick={(e) => (e.currentTarget === e.target) && toggleDialog()}>
-                            <div className="dialog-container">
-                                <h2>Notification</h2>
-                                <div><b>bruce.wayne</b> wants to be your friend</div>
-                                <button onClick={toggleDialog}>close</button>
-                            </div>
-                        </dialog>
+                        {friends.map(friend => {
+                            if(friend.status === 'added')
+                                return <div className="friend-card" key={friend.id}>{friend.friend.firstName} {friend.friend.lastName}</div>
+                        })}
+                        <button onClick={() => console.log(newFriendList)}>click me</button>
                     </div>
-                    }
-
+                    <div className="user-profile">
+                        <b>{user.firstName} {user.lastName}</b>
+                        <br />
+                        @{user.username}
+                        <button onClick={() => setIsFindFriendMode(true)}>Find Friend</button>
+                    </div>
                 </div>
                 <div className="right-ui-container">
+                    {isFindFriendMode ? 
+                    <>
+                        <FindFriend
+                            setIsFindFriendMode={setIsFindFriendMode}
+                            searchNewFriendTerm={searchNewFriendTerm}
+                            setSearchNewFriendTerm={setSearchNewFriendTerm}
+                            newFriendList={newFriendList}
+                            handleFriendRequest={handleFriendRequest}
+                            friends={friends}
+                        />
+                        <dialog ref={friendRequestSentDialogRef} onClick={(e) => (e.currentTarget === e.target) && toggleFriendRequestSentDialog()}>
+                            <div className="friend-request-dialog-container">
+                                <div>Friend Request Sent!</div>
+                                <br />
+                                <button onClick={toggleFriendRequestSentDialog}>close</button>
+                            </div>
+                        </dialog>
+                    </>
+                    :
+                    <>
                     <h2>Friend Name</h2>
                     <ul className="messages">
                         <li>test 1</li>
@@ -152,6 +163,9 @@ export default function Chat() {
                         <input type="text" id="input" autoComplete="off" onChange={(e) => setChat(e.target.value)} required/>
                         <button>Send</button>
                     </form>
+                     </>
+                    }
+
                 </div>
             </main>
         )}
